@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>fragment_shader.glsl</file>
+        <file>vertex_shader.glsl</file>
+        <file alias="earthmap.jpg">res/earthmap1k.jpg</file>
+    </qresource>
+</RCC>
