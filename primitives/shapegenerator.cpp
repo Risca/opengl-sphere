@@ -1,9 +1,12 @@
 #include "shapegenerator.h"
 
 #include <glm/ext/scalar_constants.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 using glm::vec2;
 using glm::vec3;
+using glm::mat3;
+using glm::mat4;
 
 namespace {
 
@@ -269,6 +272,8 @@ ShapeData ShapeGenerator::makeSphere(uint tesselation)
     const float RADIUS = 1.0f;
     const double CIRCLE = glm::pi<double>() * 2;
     const double SLICE_ANGLE = CIRCLE / (dimensions - 1);
+    // rotate sphere pi/2 around X axis
+    const mat4 rotationMatrix = glm::rotate(mat4(1.0f), glm::pi<float>()/2.0f, vec3(1.0f, 0.0f, 0.0f));
     for (size_t col = 0; col < dimensions; col++)
     {
         double phi = -SLICE_ANGLE * col;
@@ -280,6 +285,8 @@ ShapeData ShapeGenerator::makeSphere(uint tesselation)
             v.position.x = RADIUS * cos(phi) * sin(theta);
             v.position.y = RADIUS * sin(phi) * sin(theta);
             v.position.z = RADIUS * cos(theta);
+            // fixup positions to show equator instead of south pole
+            v.position = mat3(rotationMatrix) * v.position;
             v.normal = glm::normalize(v.position);
             v.color = vec3(1.0f, 1.0f, 1.0f);
         }
