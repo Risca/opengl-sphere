@@ -6,6 +6,8 @@
 #include <glm/gtx/transform.hpp>
 #include <QDebug>
 #include <QFile>
+#include <QKeyEvent>
+#include <QMouseEvent>
 #include <QTimer>
 #include <QVector>
 
@@ -174,6 +176,7 @@ void GlobeWidget::initializeGL()
     glEnable(GL_CULL_FACE); // removes back side of shapes
     sendDataToOpenGL(_glBufferId, _glTextureID);
     installShaders();
+    setMouseTracking(true);
 }
 
 void GlobeWidget::paintGL()
@@ -183,9 +186,12 @@ void GlobeWidget::paintGL()
     mat4 projectionMatrix = glm::perspective(60.0f * glm::pi<float>() / 180.0f, ((float)width()/height()), 0.1f, 10.0f);
     mat4 translationMatrix = glm::translate(mat4(1.0f), vec3(0.0f, 0.0f, -3.0f));
     mat4 modelToWorldMatrix = glm::rotate(translationMatrix, (0.0f * glm::pi<GLfloat>() ) / 180.0f, vec3(0.0f, 1.0f, 0.0f));
+    mat4 worldToViewMatrix = _camera.getWorldToViewMatrix();
 
     GLint modelToWorldMatrixUniformLocation = glGetUniformLocation(g_programID, "modelToWorldMatrix");
     glUniformMatrix4fv(modelToWorldMatrixUniformLocation, 1, GL_FALSE, &modelToWorldMatrix[0][0]);
+    GLint worldToViewMatrixUniformLocation = glGetUniformLocation(g_programID, "worldToViewMatrix");
+    glUniformMatrix4fv(worldToViewMatrixUniformLocation, 1, GL_FALSE, &worldToViewMatrix[0][0]);
     GLint projectionMatrixUniformLocation = glGetUniformLocation(g_programID, "projectionMatrix");
     glUniformMatrix4fv(projectionMatrixUniformLocation, 1, GL_FALSE, &projectionMatrix[0][0]);
 
@@ -196,6 +202,8 @@ void GlobeWidget::paintGL()
     const vec4 sunPositionModel = glm::rotate(-theta, vec3(-0.3f, 1.0f, 0.0f)) * vec4(0.0f, 0.0f, r, 1.0f);
     const vec4 sunPositionWorld = translationMatrix * sunPositionModel;
 
+    GLint eyePositionWorldUniformLocation = glGetUniformLocation(g_programID, "eyePositionWorld");
+    glUniform3fv(eyePositionWorldUniformLocation, 1, &_camera.getPosition()[0]);
     GLint sunPositionUniformLocation = glGetUniformLocation(g_programID, "sunPositionWorld");
     glUniform3fv(sunPositionUniformLocation, 1, &sunPositionWorld[0]);
     GLint sunColorUniformLocation = glGetUniformLocation(g_programID, "sunColor");
@@ -212,6 +220,36 @@ void GlobeWidget::paintGL()
     glUniform1i(nightTextureHandleUniformLocation, 1);
 
     glDrawElements(GL_TRIANGLES, g_numIndices, GL_UNSIGNED_SHORT, (void*)g_indexOffset);
+}
+
+void GlobeWidget::keyPressEvent(QKeyEvent *e)
+{
+    switch (e->key()) {
+    case Qt::Key_W:
+        _camera.moveForward();
+        break;
+    case Qt::Key_S:
+        _camera.moveBackwards();
+        break;
+    case Qt::Key_A:
+        _camera.strafeLeft();
+        break;
+    case Qt::Key_D:
+        _camera.strafeRight();
+        break;
+    case Qt::Key_R:
+        _camera.moveUp();
+        break;
+    case Qt::Key_F:
+        _camera.moveDown();
+        break;
+    }
+}
+
+void GlobeWidget::mouseMoveEvent(QMouseEvent *e)
+{
+    _camera.mouseUpdate(glm::vec2(e->x(), e->y()));
+    repaint();
 }
 
 void GlobeWidget::updateSunPosition()

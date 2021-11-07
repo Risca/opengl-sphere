@@ -6,6 +6,7 @@ attribute vec3 normalModel;
 attribute vec2 textureCoordinateAttribute;
 
 uniform mat4 modelToWorldMatrix;
+uniform mat4 worldToViewMatrix;
 uniform mat4 projectionMatrix;
 
 varying vec3 normalWorld;
@@ -19,6 +20,6 @@ void main(void)
     normalWorld = vec3(modelToWorldMatrix * vec4(normalModel, 0.0));
     vec4 worldPosition = modelToWorldMatrix * vertexPositionModel;
     vertexPositionWorld = vec3(worldPosition);
-    gl_Position = projectionMatrix * worldPosition;
+    gl_Position = projectionMatrix * worldToViewMatrix * worldPosition;
     textureCoordinate = textureCoordinateAttribute;
 }
