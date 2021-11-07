@@ -6,8 +6,8 @@ const float Camera::MOVEMENT_SPEED = 0.1f;
 
 Camera::Camera() :
     UP(0.0f, 1.0f, 0.0f),
-    position(0.0f, 0.0f, 0.0f),
-    viewDirection(0.0f, 0.0f, -1.0f),
+    position(1.41558f , 1.50537f , -3.47837f),
+    viewDirection(-0.677488f, -0.708331f, 0.198111f),
     strafeDirection(glm::cross(viewDirection, UP)),
     oldMousePosition(0.0f, 0.0f)
 {
@@ -22,6 +22,11 @@ glm::mat4 Camera::getWorldToViewMatrix() const
 const glm::vec3 &Camera::getPosition() const
 {
     return position;
+}
+
+const glm::vec3 &Camera::getViewDirection() const
+{
+    return viewDirection;
 }
 
 void Camera::mouseUpdate(const glm::vec2 &newMousePosition)

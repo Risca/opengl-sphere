@@ -243,6 +243,13 @@ void GlobeWidget::keyPressEvent(QKeyEvent *e)
     case Qt::Key_F:
         _camera.moveDown();
         break;
+    case Qt::Key_P: {
+        glm::vec3 pos = _camera.getPosition();
+        glm::vec3 dir = _camera.getViewDirection();
+        qDebug() << "Camera position: (" << pos.x << "," << pos.y << "," << pos.z << ")";
+        qDebug() << "Camera direction: (" << dir.x << "," << dir.y << "," << dir.z << ")";
+        break;
+    }
     }
 }
 
