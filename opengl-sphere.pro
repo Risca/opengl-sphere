@@ -30,7 +30,14 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 DISTFILES += \
     fragment_shader.glsl \
+    res/earthlights10k.jpg \
+    res/earthlights1k.jpg \
+    res/earthlights2k.jpg \
+    res/earthlights4k.jpg \
+    res/earthmap10k.jpg \
     res/earthmap1k.jpg \
+    res/earthmap2k.jpg \
+    res/earthmap4k.jpg \
     vertex_shader.glsl
 
 RESOURCES += \

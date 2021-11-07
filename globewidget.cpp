@@ -110,7 +110,7 @@ void installShaders()
 
 GLint g_numIndices;
 GLsizeiptr g_indexOffset;
-void sendDataToOpenGL(GLuint& bufferID, GLuint& textureID)
+void sendDataToOpenGL(GLuint& bufferID, GLuint textureID[])
 {
     ShapeData shape = ShapeGenerator::makeSphere(50);
 
@@ -132,17 +132,23 @@ void sendDataToOpenGL(GLuint& bufferID, GLuint& textureID)
     g_numIndices = shape.indices.count();
     g_indexOffset = shape.vertexBufferSize();
 
-    glGenTextures(1, &textureID);
-    glBindTexture(GL_TEXTURE_2D, textureID);
-    QImage img = QImage(":/earthmap.jpg").convertToFormat(QImage::Format_RGBX8888).mirrored(false, true);
-    if (img.isNull()) {
-        qWarning() << "Failed to load texture";
-        return;
-    }
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.width(), img.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, img.constBits());
+    glGenTextures(2, textureID);
+    const QString filename[] = {
+        ":/blue_marble.jpg",
+        ":/black_marble.jpg",
+    };
+    for (int i = 0; i < 2; ++i) {
+        glBindTexture(GL_TEXTURE_2D, textureID[i]);
+        QImage img = QImage(filename[i]).convertToFormat(QImage::Format_RGBX8888).mirrored(false, true);
+        if (img.isNull()) {
+            qWarning() << "Failed to load texture" << filename[i];
+            return;
+        }
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.width(), img.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, img.constBits());
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    }
 }
 
 } // anonymous namespace
@@ -199,9 +205,14 @@ void GlobeWidget::paintGL()
     glUniform4f(sunColorUniformLocation, 1.0f, 0.6f, 0.2f, 1.0f);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, _glTextureID);
-    GLint textureHandleUniformLocation = glGetUniformLocation(g_programID, "textureHandle");
-    glUniform1i(textureHandleUniformLocation, 0);
+    glBindTexture(GL_TEXTURE_2D, _glTextureID[0]);
+    GLint dayTextureHandleUniformLocation = glGetUniformLocation(g_programID, "dayTextureHandle");
+    glUniform1i(dayTextureHandleUniformLocation, 0);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, _glTextureID[1]);
+    GLint nightTextureHandleUniformLocation = glGetUniformLocation(g_programID, "nightTextureHandle");
+    glUniform1i(nightTextureHandleUniformLocation, 1);
 
     glDrawElements(GL_TRIANGLES, g_numIndices, GL_UNSIGNED_SHORT, (void*)g_indexOffset);
 }

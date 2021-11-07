@@ -15,7 +15,8 @@ public:
     void paintGL();
 
 private:
-    GLuint _glBufferId, _glTextureID;
+    GLuint _glBufferId;
+    GLuint _glTextureID[2];
     float theta;
 
 private slots:
