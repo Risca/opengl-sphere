@@ -155,7 +155,7 @@ void sendDataToOpenGL(GLuint& bufferID, GLuint textureID[])
 
 } // anonymous namespace
 
-GlobeWidget::GlobeWidget(QOpenGLWidget *parent) : QOpenGLWidget(parent), _glBufferId(0), theta(0.0f)
+GlobeWidget::GlobeWidget(QOpenGLWidget *parent) : QOpenGLWidget(parent), _glBufferId(0), theta(0.0f), capturing(false)
 {
     QTimer *timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &GlobeWidget::updateSunPosition);
@@ -220,6 +220,10 @@ void GlobeWidget::paintGL()
     glUniform1i(nightTextureHandleUniformLocation, 1);
 
     glDrawElements(GL_TRIANGLES, g_numIndices, GL_UNSIGNED_SHORT, (void*)g_indexOffset);
+    if (capturing) {
+        QImage img = grabFramebuffer();
+        img.save(QString("capture_%1.jpg").arg(capturing, 3, 10, QChar('0')));
+    }
 }
 
 void GlobeWidget::keyPressEvent(QKeyEvent *e)
@@ -243,6 +247,9 @@ void GlobeWidget::keyPressEvent(QKeyEvent *e)
     case Qt::Key_F:
         _camera.moveDown();
         break;
+    case Qt::Key_C:
+        capturing = 360 + 1;
+        break;
     case Qt::Key_P: {
         glm::vec3 pos = _camera.getPosition();
         glm::vec3 dir = _camera.getViewDirection();
@@ -265,5 +272,7 @@ void GlobeWidget::updateSunPosition()
     if (theta > 2 * glm::pi<float>()) {
         theta = 0.0f;
     }
+    if (capturing)
+        --capturing;
     repaint();
 }

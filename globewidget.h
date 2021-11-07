@@ -24,6 +24,7 @@ private:
     GLuint _glTextureID[2];
     float theta;
     Camera _camera;
+    int capturing;
 
 private slots:
     void updateSunPosition();
