@@ -3,7 +3,7 @@
 #include "primitives/shapegenerator.h"
 
 #include <algorithm>
-#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/transform.hpp>
 #include <QDebug>
 #include <QFile>
 #include <QTimer>
@@ -192,15 +192,12 @@ void GlobeWidget::paintGL()
     GLint ambientLightUniformLocation = glGetUniformLocation(g_programID, "ambientLight");
     glUniform4f(ambientLightUniformLocation, 0.05f, 0.05f, 0.1f, 1.0f);
 
-    const float r = 2.0f;
-    vec4 sunPosition(0.0f, 0.0f, 0.0f, 1.0f);
-    sunPosition = glm::translate(mat4(1.0f), vec3(0.0f, 0.0f, r)) * sunPosition;
-    sunPosition = glm::rotate(mat4(1.0f), theta, vec3(-0.3f, 1.0f, 0.0f)) * sunPosition;
-    sunPosition = translationMatrix * sunPosition;
+    const float r = 10.0f;
+    const vec4 sunPositionModel = glm::rotate(-theta, vec3(-0.3f, 1.0f, 0.0f)) * vec4(0.0f, 0.0f, r, 1.0f);
+    const vec4 sunPositionWorld = translationMatrix * sunPositionModel;
 
     GLint sunPositionUniformLocation = glGetUniformLocation(g_programID, "sunPositionWorld");
-    glUniform3fv(sunPositionUniformLocation, 1, &sunPosition[0]);
-
+    glUniform3fv(sunPositionUniformLocation, 1, &sunPositionWorld[0]);
     GLint sunColorUniformLocation = glGetUniformLocation(g_programID, "sunColor");
     glUniform4f(sunColorUniformLocation, 1.0f, 0.6f, 0.2f, 1.0f);
 
@@ -219,7 +216,7 @@ void GlobeWidget::paintGL()
 
 void GlobeWidget::updateSunPosition()
 {
-    theta += 1 * glm::pi<float>() / 180.0;
+    theta += 1 * glm::pi<float>() / 180.0f;
     if (theta > 2 * glm::pi<float>()) {
         theta = 0.0f;
     }
