@@ -18,9 +18,9 @@ void main(void)
     lowp vec3 lightVectorWorld = normalize(sunPositionWorld - vertexPositionWorld);
     lowp float brightness = dot(lightVectorWorld, normalize(normalWorld));
 
-    lowp vec4 diffuseLight;
-    diffuseLight += brightness * texture2D(dayTextureHandle, textureCoordinate) * clamp(atan((brightness - ambientLight) * 5.0), 0.0, 1.0);
-    diffuseLight += texture2D(nightTextureHandle, textureCoordinate) * clamp(atan((ambientLight - brightness + 0.25) * 10.0), 0.0, 1.0);
+    lowp vec4 diffuseLight = vec4(0.0, 0.0, 0.0, 1.0);
+    diffuseLight += texture2D(dayTextureHandle, textureCoordinate) * clamp(atan(brightness) * 10.0, 0.0, 1.0);
+    diffuseLight += texture2D(nightTextureHandle, textureCoordinate) * (1.0 - clamp(atan(brightness) * 10.0, 0.0, 1.0));
     diffuseLight.a = 1.0;
 
     // Specular light
