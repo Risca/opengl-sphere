@@ -17,14 +17,13 @@ protected:
     void initializeGL();
     void paintGL();
     void keyPressEvent(QKeyEvent* e);
-    void mouseMoveEvent(QMouseEvent* e);
 
 private:
     GLuint _glBufferId;
     GLuint _glTextureID[2];
-    float theta;
-    Camera _camera;
+    float theta, phi;
     int capturing;
+    float sunHeight;
 
 private slots:
     void updateSunPosition();

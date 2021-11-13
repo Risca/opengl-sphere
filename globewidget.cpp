@@ -17,6 +17,9 @@ using glm::mat4;
 
 namespace {
 
+const double EARTH_TILT_ANGLE = 23.43645 * glm::pi<double>() / 180.0; // radians
+Q_GLOBAL_STATIC_WITH_ARGS(const vec3, EARTH_TILT, (sin(EARTH_TILT_ANGLE), cos(EARTH_TILT_ANGLE), 0.0f));
+
 std::string readShaderCode(const QString& filename)
 {
     QFile file(filename);
@@ -155,7 +158,7 @@ void sendDataToOpenGL(GLuint& bufferID, GLuint textureID[])
 
 } // anonymous namespace
 
-GlobeWidget::GlobeWidget(QOpenGLWidget *parent) : QOpenGLWidget(parent), _glBufferId(0), theta(0.0f), capturing(false)
+GlobeWidget::GlobeWidget(QOpenGLWidget *parent) : QOpenGLWidget(parent), _glBufferId(0), theta(0.0f), phi(0.0f), capturing(false), sunHeight(1.0f)
 {
     QTimer *timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &GlobeWidget::updateSunPosition);
@@ -179,35 +182,50 @@ void GlobeWidget::initializeGL()
     setMouseTracking(true);
 }
 
+template <typename T>
+T deg2rad(T degrees)
+{
+    return degrees * glm::pi<T>() / T(180);
+}
+
 void GlobeWidget::paintGL()
 {
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
-    mat4 projectionMatrix = glm::perspective(60.0f * glm::pi<float>() / 180.0f, ((float)width()/height()), 0.1f, 10.0f);
-    mat4 translationMatrix = glm::translate(mat4(1.0f), vec3(0.0f, 0.0f, -3.0f));
-    mat4 modelToWorldMatrix = glm::rotate(translationMatrix, (0.0f * glm::pi<GLfloat>() ) / 180.0f, vec3(0.0f, 1.0f, 0.0f));
-    mat4 worldToViewMatrix = _camera.getWorldToViewMatrix();
+    const float r = 10.0f;
+    const float _sunHeight = sunHeight + cos(phi / 2.0f); // Move sun higher on winter to get approximately correct polar lights
+    mat4 projectionMatrix = glm::perspective(deg2rad(60.0f), ((float)width()/height()), 0.1f, 10.0f);
+    const vec3 earthPositionWorld = glm::rotate(mat4(1.0f), phi, vec3(0.0f, 1.0f, 0.0f)) * vec4(r, 0.0f, 0.0f, 1.0f);
+    mat4 earthTranslationMatrix = glm::translate(mat4(1.0f), earthPositionWorld);
+    mat4 earthRotationMatrix = glm::rotate(mat4(1.0f), theta, *EARTH_TILT) * glm::rotate(mat4(1.0f), static_cast<float>(EARTH_TILT_ANGLE), vec3(0.0f, 0.0f, -1.0f));
+    mat4 modelToWorldMatrix = earthTranslationMatrix * earthRotationMatrix;
 
     GLint modelToWorldMatrixUniformLocation = glGetUniformLocation(g_programID, "modelToWorldMatrix");
     glUniformMatrix4fv(modelToWorldMatrixUniformLocation, 1, GL_FALSE, &modelToWorldMatrix[0][0]);
-    GLint worldToViewMatrixUniformLocation = glGetUniformLocation(g_programID, "worldToViewMatrix");
-    glUniformMatrix4fv(worldToViewMatrixUniformLocation, 1, GL_FALSE, &worldToViewMatrix[0][0]);
     GLint projectionMatrixUniformLocation = glGetUniformLocation(g_programID, "projectionMatrix");
     glUniformMatrix4fv(projectionMatrixUniformLocation, 1, GL_FALSE, &projectionMatrix[0][0]);
 
     GLint ambientLightUniformLocation = glGetUniformLocation(g_programID, "ambientLight");
     glUniform4f(ambientLightUniformLocation, 0.05f, 0.05f, 0.1f, 1.0f);
-
-    const float r = 10.0f;
-    const vec4 sunPositionModel = glm::rotate(-theta, vec3(-0.3f, 1.0f, 0.0f)) * vec4(0.0f, 0.0f, r, 1.0f);
-    const vec4 sunPositionWorld = translationMatrix * sunPositionModel;
-
-    GLint eyePositionWorldUniformLocation = glGetUniformLocation(g_programID, "eyePositionWorld");
-    glUniform3fv(eyePositionWorldUniformLocation, 1, &_camera.getPosition()[0]);
-    GLint sunPositionUniformLocation = glGetUniformLocation(g_programID, "sunPositionWorld");
-    glUniform3fv(sunPositionUniformLocation, 1, &sunPositionWorld[0]);
     GLint sunColorUniformLocation = glGetUniformLocation(g_programID, "sunColor");
     glUniform4f(sunColorUniformLocation, 1.0f, 0.6f, 0.2f, 1.0f);
+
+    const vec4 eyePositionModel =
+            glm::rotate(mat4(1.0f), deg2rad(100.0f) + theta, *EARTH_TILT) *                             // follow earth rotation
+            glm::rotate(mat4(1.0f), deg2rad(-60.0f), glm::cross(*EARTH_TILT, vec3(0.0f, 0.0f, 1.0f))) * // look more north
+            vec4(0.0f, 0.0f, 3.0f, 1.0f);
+    const vec3 eyePositionWorld = earthTranslationMatrix * eyePositionModel;
+    GLint eyePositionWorldUniformLocation = glGetUniformLocation(g_programID, "eyePositionWorld");
+    glUniform3fv(eyePositionWorldUniformLocation, 1, &eyePositionWorld[0]);
+
+    mat4 worldToViewMatrix = glm::lookAt(eyePositionWorld, earthPositionWorld, *EARTH_TILT);
+    //mat4 worldToViewMatrix = glm::lookAt(eyePositionWorld, earthPositionWorld, vec3(0.0f, 1.0f, 0.0f));
+    GLint worldToViewMatrixUniformLocation = glGetUniformLocation(g_programID, "worldToViewMatrix");
+    glUniformMatrix4fv(worldToViewMatrixUniformLocation, 1, GL_FALSE, &worldToViewMatrix[0][0]);
+
+    const vec3 sunPositionWorld = vec3(0.0f, _sunHeight, 0.0f);
+    GLint sunPositionUniformLocation = glGetUniformLocation(g_programID, "sunPositionWorld");
+    glUniform3fv(sunPositionUniformLocation, 1, &sunPositionWorld[0]);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, _glTextureID[0]);
@@ -229,48 +247,24 @@ void GlobeWidget::paintGL()
 void GlobeWidget::keyPressEvent(QKeyEvent *e)
 {
     switch (e->key()) {
-    case Qt::Key_W:
-        _camera.moveForward();
-        break;
-    case Qt::Key_S:
-        _camera.moveBackwards();
-        break;
-    case Qt::Key_A:
-        _camera.strafeLeft();
-        break;
-    case Qt::Key_D:
-        _camera.strafeRight();
-        break;
-    case Qt::Key_R:
-        _camera.moveUp();
-        break;
-    case Qt::Key_F:
-        _camera.moveDown();
-        break;
     case Qt::Key_C:
         capturing = 360 + 1;
         break;
-    case Qt::Key_P: {
-        glm::vec3 pos = _camera.getPosition();
-        glm::vec3 dir = _camera.getViewDirection();
-        qDebug() << "Camera position: (" << pos.x << "," << pos.y << "," << pos.z << ")";
-        qDebug() << "Camera direction: (" << dir.x << "," << dir.y << "," << dir.z << ")";
+    case Qt::Key_Q:
+        this->close();
+        break;
+    case Qt::Key_P:
+        qDebug() << "Sun height: " << sunHeight;
         break;
     }
-    }
-}
-
-void GlobeWidget::mouseMoveEvent(QMouseEvent *e)
-{
-    _camera.mouseUpdate(glm::vec2(e->x(), e->y()));
-    repaint();
 }
 
 void GlobeWidget::updateSunPosition()
 {
-    theta += 1 * glm::pi<float>() / 180.0f;
+    theta += deg2rad(1.0f);
     if (theta > 2 * glm::pi<float>()) {
         theta = 0.0f;
+        phi += deg2rad(1.0f);
     }
     if (capturing)
         --capturing;
