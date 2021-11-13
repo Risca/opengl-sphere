@@ -24,12 +24,16 @@ void main(void)
     diffuseLight.a = 1.0;
 
     // Specular light
+#if 0
     lowp vec3 reflectedLightVectorWorld = reflect(-lightVectorWorld, normalWorld);
     lowp vec3 eyeVectorWorld = normalize(eyePositionWorld - vertexPositionWorld);
     lowp float specularity = clamp(dot(reflectedLightVectorWorld, eyeVectorWorld), 0.0, 1.0);
     specularity = pow(specularity, 50.0);
     lowp vec4 specularLight = sunColor * specularity;
+#else
+    lowp vec4 specularLight = sunColor * pow(clamp(brightness, 0.0, 1.0), 50.0);
+#endif
 
-    lowp vec4 combinedLight = ambientLight + clamp(diffuseLight, 0.0, 1.0) + specularLight;
+    lowp vec4 combinedLight = clamp(diffuseLight, 0.0, 1.0) + specularLight;
     gl_FragColor = combinedLight;
 }
