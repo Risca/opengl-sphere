@@ -1,9 +1,9 @@
 #version 100
 
-in lowp vec3 normalWorld;
-in lowp vec3 vertexPositionWorld;
-in lowp vec3 color;
-in lowp vec2 textureCoordinate;
+varying lowp vec3 normalWorld;
+varying lowp vec3 vertexPositionWorld;
+varying lowp vec3 color;
+varying mediump vec2 textureCoordinate;
 
 uniform lowp vec3 eyePositionWorld;
 uniform lowp vec3 sunPositionWorld;
