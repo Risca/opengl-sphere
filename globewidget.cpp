@@ -34,7 +34,7 @@ template<typename F1, typename F2>
 bool CheckStatus(GLuint objectID, F1 objectPropertyGetterFunc, F2 getInfoLogFunc, GLenum statusType)
 {
     GLint status;
-    glGetShaderiv(objectID, statusType, &status);
+    objectPropertyGetterFunc(objectID, statusType, &status);
     if (status != GL_TRUE) {
         GLint infoLogLength;
         objectPropertyGetterFunc(objectID, GL_INFO_LOG_LENGTH, &infoLogLength);
