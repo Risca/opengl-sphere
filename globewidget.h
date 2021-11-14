@@ -1,32 +1,34 @@
 #ifndef GLOBEWIDGET_H
 #define GLOBEWIDGET_H
 
-#include "camera.h"
-
+#include <QDateTime>
 #include <QOpenGLWidget>
 #include <QObject>
+
+class QDate;
+class QTime;
 
 class GlobeWidget : public QOpenGLWidget
 {
     Q_OBJECT
 public:
-    explicit GlobeWidget(QOpenGLWidget *parent = nullptr);
+    explicit GlobeWidget(QWidget *parent = nullptr);
     ~GlobeWidget();
+
+public slots:
+    void setDate(const QDate& date);
+    void setTime(int minutesSinceMidnight);
+    void setTime(const QTime& time);
 
 protected:
     void initializeGL();
     void paintGL();
-    void keyPressEvent(QKeyEvent* e);
 
 private:
     GLuint _glBufferId;
     GLuint _glTextureID[2];
     float theta, phi;
-    int capturing;
-    float sunHeight;
-
-private slots:
-    void updateSunPosition();
+    QDateTime dt;
 };
 
 #endif // GLOBEWIDGET_H

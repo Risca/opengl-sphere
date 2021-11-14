@@ -3,12 +3,14 @@
 #include "primitives/shapegenerator.h"
 
 #include <algorithm>
+#include <cmath>
 #include <glm/gtx/transform.hpp>
+
+#include <QDate>
 #include <QDebug>
 #include <QFile>
 #include <QKeyEvent>
-#include <QMouseEvent>
-#include <QTimer>
+#include <QTime>
 #include <QVector>
 
 using glm::vec3;
@@ -156,21 +158,60 @@ void sendDataToOpenGL(GLuint& bufferID, GLuint textureID[])
     }
 }
 
+template <typename T>
+T deg2rad(T degrees)
+{
+    return degrees * glm::pi<T>() / T(180);
+}
+
+double ERA(const QDateTime& dt)
+{
+    double ut1;
+    QDateTime UTC(dt);
+    UTC.setTimeSpec(Qt::UTC);
+    if (UTC.time() >= QTime(12, 00)) {
+        ut1 = UTC.date().toJulianDay();
+    }
+    else {
+        ut1 = UTC.date().addDays(-1).toJulianDay();
+    }
+    // add fraction of a day
+    ut1 += (double(dt.time().msecsSinceStartOfDay()) / 1000.0) / 86400.0;
+    // https://en.wikipedia.org/wiki/Sidereal_time#ERA
+    return 2 * glm::pi<double>() * fmod(0.7790572732640 + 1.00273781191135448 * (ut1 - 2451545.0), 1.0);
+}
+
 } // anonymous namespace
 
-GlobeWidget::GlobeWidget(QOpenGLWidget *parent) : QOpenGLWidget(parent), _glBufferId(0), theta(0.0f), phi(0.0f), capturing(false), sunHeight(1.0f)
+GlobeWidget::GlobeWidget(QWidget *parent) : QOpenGLWidget(parent), _glBufferId(0), theta(0.0f), phi(0.0f)
 {
-    QTimer *timer = new QTimer(this);
-    connect(timer, &QTimer::timeout, this, &GlobeWidget::updateSunPosition);
-    timer->setInterval(20);
-    timer->setSingleShot(false);
-    timer->start();
+    setDate(QDate::currentDate());
 }
 
 GlobeWidget::~GlobeWidget()
 {
     glUseProgram(0);
     glDeleteProgram(g_programID);
+}
+
+void GlobeWidget::setDate(const QDate &date)
+{
+    dt.setDate(date);
+    phi = 2 * glm::pi<double>() * (double)date.dayOfYear() / (double)date.daysInYear();
+    theta = ERA(dt);
+    repaint();
+}
+
+void GlobeWidget::setTime(int minutesSinceMidnight)
+{
+    setTime(QTime::fromMSecsSinceStartOfDay(60 * 1000 * minutesSinceMidnight));
+}
+
+void GlobeWidget::setTime(const QTime &time)
+{
+    dt.setTime(time);
+    theta = ERA(dt);
+    repaint();
 }
 
 void GlobeWidget::initializeGL()
@@ -182,18 +223,12 @@ void GlobeWidget::initializeGL()
     setMouseTracking(true);
 }
 
-template <typename T>
-T deg2rad(T degrees)
-{
-    return degrees * glm::pi<T>() / T(180);
-}
-
 void GlobeWidget::paintGL()
 {
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
     const float r = 10.0f;
-    const float _sunHeight = sunHeight + cos(phi / 2.0f); // Move sun higher on winter to get approximately correct polar lights
+    const float sunHeight = 2.0 - sin(phi / 2.0f); // Move sun higher on winter to get approximately correct polar lights
     mat4 projectionMatrix = glm::perspective(deg2rad(60.0f), ((float)width()/height()), 0.1f, 10.0f);
     const vec3 earthPositionWorld = glm::rotate(mat4(1.0f), phi, vec3(0.0f, 1.0f, 0.0f)) * vec4(r, 0.0f, 0.0f, 1.0f);
     mat4 earthTranslationMatrix = glm::translate(mat4(1.0f), earthPositionWorld);
@@ -219,11 +254,10 @@ void GlobeWidget::paintGL()
     glUniform3fv(eyePositionWorldUniformLocation, 1, &eyePositionWorld[0]);
 
     mat4 worldToViewMatrix = glm::lookAt(eyePositionWorld, earthPositionWorld, *EARTH_TILT);
-    //mat4 worldToViewMatrix = glm::lookAt(eyePositionWorld, earthPositionWorld, vec3(0.0f, 1.0f, 0.0f));
     GLint worldToViewMatrixUniformLocation = glGetUniformLocation(g_programID, "worldToViewMatrix");
     glUniformMatrix4fv(worldToViewMatrixUniformLocation, 1, GL_FALSE, &worldToViewMatrix[0][0]);
 
-    const vec3 sunPositionWorld = vec3(0.0f, _sunHeight, 0.0f);
+    const vec3 sunPositionWorld = vec3(0.0f, sunHeight, 0.0f);
     GLint sunPositionUniformLocation = glGetUniformLocation(g_programID, "sunPositionWorld");
     glUniform3fv(sunPositionUniformLocation, 1, &sunPositionWorld[0]);
 
@@ -238,35 +272,4 @@ void GlobeWidget::paintGL()
     glUniform1i(nightTextureHandleUniformLocation, 1);
 
     glDrawElements(GL_TRIANGLES, g_numIndices, GL_UNSIGNED_SHORT, (void*)g_indexOffset);
-    if (capturing) {
-        QImage img = grabFramebuffer();
-        img.save(QString("capture_%1.jpg").arg(capturing, 3, 10, QChar('0')));
-    }
-}
-
-void GlobeWidget::keyPressEvent(QKeyEvent *e)
-{
-    switch (e->key()) {
-    case Qt::Key_C:
-        capturing = 360 + 1;
-        break;
-    case Qt::Key_Q:
-        this->close();
-        break;
-    case Qt::Key_P:
-        qDebug() << "Sun height: " << sunHeight;
-        break;
-    }
-}
-
-void GlobeWidget::updateSunPosition()
-{
-    theta += deg2rad(1.0f);
-    if (theta > 2 * glm::pi<float>()) {
-        theta = 0.0f;
-        phi += deg2rad(1.0f);
-    }
-    if (capturing)
-        --capturing;
-    repaint();
 }

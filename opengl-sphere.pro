@@ -9,17 +9,22 @@ CONFIG += c++11
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    digitalclock.cpp \
     globewidget.cpp \
     main.cpp \
+    mainwindow.cpp \
     primitives/shapegenerator.cpp
 
 HEADERS += \
+    digitalclock.h \
     globewidget.h \
+    mainwindow.h \
     primitives/shapedata.h \
     primitives/shapegenerator.h \
     primitives/vertex.h
 
-FORMS +=
+FORMS += \
+    mainwindow.ui
 
 DEFINES += GL_GLEXT_PROTOTYPES
 
