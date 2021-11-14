@@ -1,6 +1,6 @@
 #include "shapegenerator.h"
 
-#include <glm/ext/scalar_constants.hpp>
+#include <glm/gtc/constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 using glm::vec2;

@@ -1,7 +1,7 @@
 #ifndef SHAPEDATA_H
 #define SHAPEDATA_H
 
-#include <GL/gl.h>
+#include <QtGui/qopengl.h>
 #include <QVector>
 #include "vertex.h"
 

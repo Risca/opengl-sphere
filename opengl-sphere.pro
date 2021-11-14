@@ -8,6 +8,15 @@ CONFIG += c++11
 # In order to do so, uncomment the following line.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
+*-g++ {
+    GCC_VERSION = $$system("$${QMAKE_CXX} -dumpversion")
+    # The mangling of 'va_list' changed in GCC 4.4 (for arm), but it seem to
+    # work anyway, so we Suppress the warning on GCC 4.4 and later
+    !contains(GCC_VERSION, [1-4].[0-3]) {
+        QMAKE_CXXFLAGS += -Wno-psabi
+    }
+}
+
 SOURCES += \
     digitalclock.cpp \
     globewidget.cpp \
@@ -26,7 +35,8 @@ HEADERS += \
 FORMS += \
     mainwindow.ui
 
-DEFINES += GL_GLEXT_PROTOTYPES
+DEFINES += GL_GLEXT_PROTOTYPES \
+    GLM_FORCE_RADIANS
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

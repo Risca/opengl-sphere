@@ -12,7 +12,7 @@ class GlobeWidget : public QOpenGLWidget
 {
     Q_OBJECT
 public:
-    explicit GlobeWidget(QWidget *parent = nullptr);
+    explicit GlobeWidget(QWidget *parent = 0);
     ~GlobeWidget();
 
 public slots:

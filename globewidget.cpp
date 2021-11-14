@@ -4,11 +4,13 @@
 
 #include <algorithm>
 #include <cmath>
+#include <glm/gtc/constants.hpp>
 #include <glm/gtx/transform.hpp>
 
 #include <QDate>
 #include <QDebug>
 #include <QFile>
+#include <QImage>
 #include <QKeyEvent>
 #include <QTime>
 #include <QVector>
@@ -253,7 +255,7 @@ void GlobeWidget::paintGL()
     const float r = 10.0f;
     const float sunHeight = 2.0 - sin(phi / 2.0f); // Move sun higher on winter to get approximately correct polar lights
     mat4 projectionMatrix = glm::perspective(deg2rad(60.0f), ((float)width()/height()), 0.1f, 10.0f);
-    const vec3 earthPositionWorld = glm::rotate(mat4(1.0f), phi, vec3(0.0f, 1.0f, 0.0f)) * vec4(r, 0.0f, 0.0f, 1.0f);
+    const vec3 earthPositionWorld = vec3(glm::rotate(mat4(1.0f), phi, vec3(0.0f, 1.0f, 0.0f)) * vec4(r, 0.0f, 0.0f, 1.0f));
     mat4 earthTranslationMatrix = glm::translate(mat4(1.0f), earthPositionWorld);
     mat4 modelToWorldMatrix =
         glm::rotate(
@@ -272,13 +274,13 @@ void GlobeWidget::paintGL()
     GLint sunColorUniformLocation = glGetUniformLocation(g_programID, "sunColor");
     glUniform4f(sunColorUniformLocation, 1.0f, 0.6f, 0.2f, 1.0f);
 
-    const vec3 eyePositionWorld =
+    const vec3 eyePositionWorld = vec3(
             glm::rotate(
                 glm::rotate(
                     earthTranslationMatrix,
                 deg2rad(100.0f) + theta, *EARTH_TILT),    // follow earth rotation
             deg2rad(-60.0f), glm::cross(*EARTH_TILT, vec3(0.0f, 0.0f, 1.0f))) * // look more north
-        vec4(0.0f, 0.0f, 3.0f, 1.0f);
+        vec4(0.0f, 0.0f, 3.0f, 1.0f));
     GLint eyePositionWorldUniformLocation = glGetUniformLocation(g_programID, "eyePositionWorld");
     glUniform3fv(eyePositionWorldUniformLocation, 1, &eyePositionWorld[0]);
 
