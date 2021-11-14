@@ -113,12 +113,18 @@ void installShaders()
 
     g_programID = programID;
     glUseProgram(programID);
+
+    GLenum status = glGetError();
+    if (status != GL_NO_ERROR)
+        qWarning() << "Some warnings were generated loading shaders:" << (int)status;
+    qDebug() << "Shaders successfully installed!";
 }
 
 GLint g_numIndices;
 GLsizeiptr g_indexOffset;
 void sendDataToOpenGL(GLuint& bufferID, GLuint textureID[])
 {
+    GLenum status;
     ShapeData shape = ShapeGenerator::makeSphere(50);
 
     glGenBuffers(1, &bufferID);
@@ -138,8 +144,15 @@ void sendDataToOpenGL(GLuint& bufferID, GLuint textureID[])
 
     g_numIndices = shape.indices.count();
     g_indexOffset = shape.vertexBufferSize();
+    status = glGetError();
+    if (status != GL_NO_ERROR)
+        qWarning() << "Some warnings were generated creating buffers:" << (int)status;
 
     glGenTextures(2, textureID);
+    status = glGetError();
+    if (status != GL_NO_ERROR)
+        qWarning() << "Failed to generate textures!";
+
     const QString filename[] = {
         ":/blue_marble.jpg",
         ":/black_marble.jpg",
@@ -152,10 +165,17 @@ void sendDataToOpenGL(GLuint& bufferID, GLuint textureID[])
             return;
         }
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.width(), img.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, img.constBits());
+        status = glGetError();
+        if (status != GL_NO_ERROR)
+            qWarning() << "Some warnings were generated loading texture" << i << ":" << (int)status;
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        status = glGetError();
+        if (status != GL_NO_ERROR)
+            qWarning() << "Some warnings were generated setting params for texture" << i << ":" << (int)status;
     }
+    qDebug() << "Textures successfully loaded!";
 }
 
 template <typename T>
@@ -226,6 +246,8 @@ void GlobeWidget::initializeGL()
 
 void GlobeWidget::paintGL()
 {
+    GLenum status;
+
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
     const float r = 10.0f;
@@ -268,15 +290,30 @@ void GlobeWidget::paintGL()
     GLint sunPositionUniformLocation = glGetUniformLocation(g_programID, "sunPositionWorld");
     glUniform3fv(sunPositionUniformLocation, 1, &sunPositionWorld[0]);
 
+    status = glGetError();
+    if (status != GL_NO_ERROR)
+        qWarning() << "Some warnings were generated loading matrices:" << (int)status;
+
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, _glTextureID[0]);
     GLint dayTextureHandleUniformLocation = glGetUniformLocation(g_programID, "dayTextureHandle");
     glUniform1i(dayTextureHandleUniformLocation, 0);
+
+    status = glGetError();
+    if (status != GL_NO_ERROR)
+        qWarning() << "Some warnings were generated loading texture 0:" << (int)status;
 
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, _glTextureID[1]);
     GLint nightTextureHandleUniformLocation = glGetUniformLocation(g_programID, "nightTextureHandle");
     glUniform1i(nightTextureHandleUniformLocation, 1);
 
+    status = glGetError();
+    if (status != GL_NO_ERROR)
+        qWarning() << "Some warnings were generated loading texture 1:" << (int)status;
+
     glDrawElements(GL_TRIANGLES, g_numIndices, GL_UNSIGNED_SHORT, (void*)g_indexOffset);
+    status = glGetError();
+    if (status != GL_NO_ERROR)
+        qWarning() << "Some warnings were generated while drawing triangles:" << (int)status;
 }
