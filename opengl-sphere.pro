@@ -46,4 +46,5 @@ DISTFILES += \
     vertex_shader.glsl
 
 RESOURCES += \
-    resources.qrc
+    resources.qrc \
+    shaders.qrc

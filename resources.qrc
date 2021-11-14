@@ -1,7 +1,5 @@
 <RCC>
     <qresource prefix="/">
-        <file>fragment_shader.glsl</file>
-        <file>vertex_shader.glsl</file>
         <file alias="black_marble.jpg">res/earthlights4k.jpg</file>
         <file alias="blue_marble.jpg">res/earthmap4k.jpg</file>
     </qresource>
