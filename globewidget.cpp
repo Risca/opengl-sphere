@@ -197,8 +197,7 @@ T deg2rad(T degrees)
 double ERA(const QDateTime& dt)
 {
     double ut1;
-    QDateTime UTC(dt);
-    UTC.setTimeSpec(Qt::UTC);
+    QDateTime UTC = dt.toUTC();
     if (UTC.time() >= QTime(12, 00)) {
         ut1 = UTC.date().toJulianDay();
     }
@@ -206,7 +205,7 @@ double ERA(const QDateTime& dt)
         ut1 = UTC.date().addDays(-1).toJulianDay();
     }
     // add fraction of a day
-    ut1 += (double(dt.time().msecsSinceStartOfDay()) / 1000.0) / 86400.0;
+    ut1 += (double(UTC.time().msecsSinceStartOfDay()) / 1000.0) / 86400.0;
     // https://en.wikipedia.org/wiki/Sidereal_time#ERA
     return 2 * glm::pi<double>() * fmod(0.7790572732640 + 1.00273781191135448 * (ut1 - 2451545.0), 1.0);
 }
@@ -215,7 +214,8 @@ double ERA(const QDateTime& dt)
 
 GlobeWidget::GlobeWidget(QWidget *parent) : QOpenGLWidget(parent), _glBufferId(0), theta(0.0f), phi(0.0f)
 {
-    setDate(QDate::currentDate());
+    dt = QDateTime::currentDateTime();
+    setDate(dt.date());
 }
 
 GlobeWidget::~GlobeWidget()
