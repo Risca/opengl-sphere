@@ -288,7 +288,6 @@ ShapeData ShapeGenerator::makeSphere(uint tesselation)
             // fixup positions to show equator instead of south pole
             v.position = mat3(rotationMatrix) * v.position;
             v.normal = glm::normalize(v.position);
-            v.color = vec3(1.0f, 1.0f, 1.0f);
         }
     }
     return ret;
