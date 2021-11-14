@@ -155,17 +155,25 @@ void sendDataToOpenGL(GLuint& bufferID, GLuint textureID[])
     if (status != GL_NO_ERROR)
         qWarning() << "Failed to generate textures!";
 
+    GLint maxTextureSize;
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
     const QString filename[] = {
         ":/blue_marble.jpg",
         ":/black_marble.jpg",
     };
     for (int i = 0; i < 2; ++i) {
         glBindTexture(GL_TEXTURE_2D, textureID[i]);
-        QImage img = QImage(filename[i]).convertToFormat(QImage::Format_RGBX8888).mirrored(false, true);
+        QImage img = QImage(filename[i])
+                .convertToFormat(QImage::Format_RGBA8888)
+                .mirrored(false, true);
         if (img.isNull()) {
             qWarning() << "Failed to load texture" << filename[i];
             return;
         }
+        if (img.height() > maxTextureSize || img.width() > maxTextureSize) {
+            img = img.scaled(maxTextureSize, maxTextureSize, Qt::KeepAspectRatio);
+        }
+
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.width(), img.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, img.constBits());
         status = glGetError();
         if (status != GL_NO_ERROR)
