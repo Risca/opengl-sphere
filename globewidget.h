@@ -27,7 +27,6 @@ protected:
 private:
     GLuint _glBufferId;
     GLuint _glTextureID[2];
-    float theta, phi;
     QDateTime dt;
 };
 

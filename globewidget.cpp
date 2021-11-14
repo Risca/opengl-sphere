@@ -212,10 +212,8 @@ double ERA(const QDateTime& dt)
 
 } // anonymous namespace
 
-GlobeWidget::GlobeWidget(QWidget *parent) : QOpenGLWidget(parent), _glBufferId(0), theta(0.0f), phi(0.0f)
+GlobeWidget::GlobeWidget(QWidget *parent) : QOpenGLWidget(parent), _glBufferId(0), dt(QDateTime::currentDateTime())
 {
-    dt = QDateTime::currentDateTime();
-    setDate(dt.date());
 }
 
 GlobeWidget::~GlobeWidget()
@@ -227,9 +225,6 @@ GlobeWidget::~GlobeWidget()
 void GlobeWidget::setDate(const QDate &date)
 {
     dt.setDate(date);
-    // TODO: center around solstice or equinox
-    phi = 2 * glm::pi<double>() * (double)date.dayOfYear() / (double)date.daysInYear();
-    theta = ERA(dt);
     repaint();
 }
 
@@ -241,7 +236,6 @@ void GlobeWidget::setTime(int minutesSinceMidnight)
 void GlobeWidget::setTime(const QTime &time)
 {
     dt.setTime(time);
-    theta = ERA(dt);
     repaint();
 }
 
@@ -261,6 +255,14 @@ void GlobeWidget::paintGL()
     GLenum status;
 
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+    // Something is still slightly off with these calculations.
+    // Winter solstice 2021 should be 15:59 UTC, but with these calculations
+    // it looks more like 17:00 UTC.
+    // TODO: center around solstice or equinox
+    const QDate date = dt.date();
+    float phi = 2 * glm::pi<double>() * (double)date.dayOfYear() / (double)date.daysInYear();
+    float theta = ERA(dt);
 
     const float r = 10.0f;
     const float sunHeight = 2.0 - sin(phi / 2.0f); // Move sun higher on winter to get approximately correct polar lights
