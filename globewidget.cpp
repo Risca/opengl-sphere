@@ -197,6 +197,7 @@ GlobeWidget::~GlobeWidget()
 void GlobeWidget::setDate(const QDate &date)
 {
     dt.setDate(date);
+    // TODO: center around solstice or equinox
     phi = 2 * glm::pi<double>() * (double)date.dayOfYear() / (double)date.daysInYear();
     theta = ERA(dt);
     repaint();
@@ -232,8 +233,12 @@ void GlobeWidget::paintGL()
     mat4 projectionMatrix = glm::perspective(deg2rad(60.0f), ((float)width()/height()), 0.1f, 10.0f);
     const vec3 earthPositionWorld = glm::rotate(mat4(1.0f), phi, vec3(0.0f, 1.0f, 0.0f)) * vec4(r, 0.0f, 0.0f, 1.0f);
     mat4 earthTranslationMatrix = glm::translate(mat4(1.0f), earthPositionWorld);
-    mat4 earthRotationMatrix = glm::rotate(mat4(1.0f), theta, *EARTH_TILT) * glm::rotate(mat4(1.0f), static_cast<float>(EARTH_TILT_ANGLE), vec3(0.0f, 0.0f, -1.0f));
-    mat4 modelToWorldMatrix = earthTranslationMatrix * earthRotationMatrix;
+    mat4 modelToWorldMatrix =
+        glm::rotate(
+            glm::rotate(
+                earthTranslationMatrix,
+            theta, *EARTH_TILT),
+        static_cast<float>(EARTH_TILT_ANGLE), vec3(0.0f, 0.0f, -1.0f));;
 
     GLint modelToWorldMatrixUniformLocation = glGetUniformLocation(g_programID, "modelToWorldMatrix");
     glUniformMatrix4fv(modelToWorldMatrixUniformLocation, 1, GL_FALSE, &modelToWorldMatrix[0][0]);
@@ -245,11 +250,13 @@ void GlobeWidget::paintGL()
     GLint sunColorUniformLocation = glGetUniformLocation(g_programID, "sunColor");
     glUniform4f(sunColorUniformLocation, 1.0f, 0.6f, 0.2f, 1.0f);
 
-    const vec4 eyePositionModel =
-            glm::rotate(mat4(1.0f), deg2rad(100.0f) + theta, *EARTH_TILT) *                             // follow earth rotation
-            glm::rotate(mat4(1.0f), deg2rad(-60.0f), glm::cross(*EARTH_TILT, vec3(0.0f, 0.0f, 1.0f))) * // look more north
-            vec4(0.0f, 0.0f, 3.0f, 1.0f);
-    const vec3 eyePositionWorld = earthTranslationMatrix * eyePositionModel;
+    const vec3 eyePositionWorld =
+            glm::rotate(
+                glm::rotate(
+                    earthTranslationMatrix,
+                deg2rad(100.0f) + theta, *EARTH_TILT),    // follow earth rotation
+            deg2rad(-60.0f), glm::cross(*EARTH_TILT, vec3(0.0f, 0.0f, 1.0f))) * // look more north
+        vec4(0.0f, 0.0f, 3.0f, 1.0f);
     GLint eyePositionWorldUniformLocation = glGetUniformLocation(g_programID, "eyePositionWorld");
     glUniform3fv(eyePositionWorldUniformLocation, 1, &eyePositionWorld[0]);
 
