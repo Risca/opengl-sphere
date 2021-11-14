@@ -14,26 +14,28 @@ uniform sampler2D nightTextureHandle;
 
 void main(void)
 {
+    lowp vec4 diffuseLight = vec4(0.0, 0.0, 0.0, 1.0);
+    lowp vec4 specularLight = vec4(0.0, 0.0, 0.0, 1.0);
+
     // Diffuse light
     lowp vec3 lightVectorWorld = normalize(sunPositionWorld - vertexPositionWorld);
     lowp float brightness = dot(lightVectorWorld, normalize(normalWorld));
 
-    lowp vec4 diffuseLight = vec4(0.0, 0.0, 0.0, 1.0);
-    diffuseLight += texture2D(dayTextureHandle, textureCoordinate) * clamp(atan(brightness) * 10.0, 0.0, 1.0);
-    diffuseLight += texture2D(nightTextureHandle, textureCoordinate) * (1.0 - clamp(atan(brightness) * 10.0, 0.0, 1.0));
-    diffuseLight.a = 1.0;
+    lowp vec4 day = texture2D(dayTextureHandle, textureCoordinate);
+    lowp vec4 night = texture2D(nightTextureHandle, textureCoordinate);
+    lowp float alpha = clamp(atan(brightness), 0.0, 1.0);
 
-    // Specular light
 #if 0
+    // Specular light
     lowp vec3 reflectedLightVectorWorld = reflect(-lightVectorWorld, normalWorld);
     lowp vec3 eyeVectorWorld = normalize(eyePositionWorld - vertexPositionWorld);
     lowp float specularity = clamp(dot(reflectedLightVectorWorld, eyeVectorWorld), 0.0, 1.0);
     specularity = pow(specularity, 50.0);
-    lowp vec4 specularLight = sunColor * specularity;
-#else
-    lowp vec4 specularLight = sunColor * pow(clamp(brightness, 0.0, 1.0), 50.0);
+    specularLight = sunColor * specularity;
+#elif 0
+    // Sun spot
+    specularLight = sunColor * pow(clamp(brightness, 0.0, 1.0), 50.0);
 #endif
 
-    lowp vec4 combinedLight = clamp(diffuseLight, 0.0, 1.0) + specularLight;
-    gl_FragColor = combinedLight;
+    gl_FragColor = mix(night, day, alpha) + specularLight;
 }

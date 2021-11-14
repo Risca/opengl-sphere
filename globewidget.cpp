@@ -249,6 +249,8 @@ void GlobeWidget::initializeGL()
 {
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE); // removes back side of shapes
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     sendDataToOpenGL(_glBufferId, _glTextureID);
     installShaders();
     setMouseTracking(true);
